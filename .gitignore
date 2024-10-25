@@ -28,7 +28,6 @@ Release/
 *.exe
 *.out
 
-
 # IDE/Editor specific files (if not using a global gitignore)
 .vscode/
 *.suo
@@ -407,3 +406,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/windows_build_fix.bat
+/.gitignore
+/build_run.bat
+/CMakeSettings.json
