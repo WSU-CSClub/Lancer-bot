@@ -193,4 +193,4 @@ This project is maintained by WSU programmers. Contributions are welcome through
 
 ## License
 
-[Your License Here]
+MPGL
