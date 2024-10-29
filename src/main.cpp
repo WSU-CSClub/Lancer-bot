@@ -1,8 +1,13 @@
-#include <iostream>
+#include "engine/board.hpp"
+#include <cstdio>
 
+int main() {
+  // Example bitboard
+  ChessBoard board(12, 0);
+  initBoard(board);
 
-int main(){
-    
-    std::cout << "Testing this thing :) \n";\
-    std::cout << "You're so smart \n";
+  // Print the board
+  printBoard(board);
+
+  return 0;
 }
