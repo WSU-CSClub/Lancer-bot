@@ -6,7 +6,8 @@ set(CMAKE_BUILD_TYPE release)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(SOURCES main.cpp)
+file(GLOB_RECURSE SOURCES "src/*.cpp" )
+
 
 include(FetchContent)
 
@@ -27,26 +28,8 @@ function(declare_local_or_remote NAME LOCAL_DIR REPO_URL TAG)
     endif()
 endfunction()
 
-# Declare libraries
-# EXAMPLE declare_local_or_remote(glfw ${CMAKE_CURRENT_SOURCE_DIR}/LIBS/glfw https://github.com/glfw/glfw.git 3.3.8)
-
-
 
 FetchContent_MakeAvailable()
 
-
-# Add an executable
-add_executable(${PROJECT_NAME}
-    src/main.cpp
-)
-
-
-
-
-
-# Link libraries and add OpenMP
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-
-)
-
-# Add OpenMP compile options
+add_executable(${PROJECT_NAME} ${SOURCES})
+target_link_libraries(${PROJECT_NAME} PRIVATE)
