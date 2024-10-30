@@ -172,11 +172,70 @@ private:
         uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
         uint64_t allPieces = getAllPieces();
             while(Rook){
+                int from = getLSB(Rook);
+                uint64_t move_mask = 0ULL;
 
+                uint64_t rank_mask = getRankMask(from);
+                uint64_t file_mask = getFileMask(from);
+
+                uint64_t blockers = allPieces & rank_mask;
+                
+
+
+                    //Looking right
+                uint64_t possible = rank_mask & (-(1ULL << (from + 1)));
+                blockers = allPieces & rank_mask & possible;
+                if (blockers) {
+                    int blocker = getLSB(blockers);
+                    possible &= ~(rank_mask & (-(1ULL << blocker)));
+                }
+                move_mask |= possible;
+
+
+
+                // Lookign left 
+                possible = rank_mask & ((1ULL << from) - 1);
+                blockers = allPieces & rank_mask;
+                if (blockers) {
+                    int blocker = 63 - __builtin_clzll(blockers & possible);
+                    possible &= ~(rank_mask & ((1ULL << (blocker + 1)) - 1));
+                }
+                move_mask |= possible;
+
+
+                blockers = allPieces & file_mask;
+
+                //Look up 
+                possible = file_mask & (-(1ULL << from + 1));
+                if(blockers){
+                    int blocker = getLSB(blockers & possible);
+                    possible &= ~(file_mask & (-(1ULL) << blocker));
+                }
+                move_mask |= possible;
+                
+
+             // Look Down (towards decreasing squares along the file)
+                possible = file_mask & ((1ULL << from) - 1);
+                blockers = allPieces & file_mask & possible;
+                if (blockers) {
+                    int blocker = 63 - __builtin_clzll(blockers);
+                    possible &= ~(file_mask & ((1ULL << (blocker + 1)) - 1));
+                }
+                move_mask |= possible;
+
+                move_mask &= ~friendly;
+
+                while (move_mask) {
+                    int to = getLSB(move_mask);
+                    moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+                    move_mask &= move_mask - 1;
+                }
+        
+            Rook &= Rook - 1;
             }
 
     void GenerateBishopMoves(bool isWhite);
-
+    
     }
     public:
     MoveGen(ChessBoard& boards) : board(boards){}
@@ -184,7 +243,8 @@ private:
     std::vector<Move> GenerateMoves(bool isWhite) {
         moves.clear();
         // GeneratePawnMoves(isWhite);
-        generateKnightMoves(isWhite);
+        // generateKnightMoves(isWhite);
+        GenerateRookMoves(isWhite);
         return moves;
     }
 };
