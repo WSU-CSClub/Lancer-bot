@@ -2,6 +2,16 @@
 #include <iostream>
 #include "board.hpp"
 
+// For  windows users!
+inline int getLSB(uint64_t b) {
+#if defined(_MSC_VER)  // If using MSVC
+    unsigned long index;
+    _BitScanForward64(&index, b);
+    return index;
+#else  // GCC, Clang, etc.
+    return __builtin_ctzll(b);
+#endif
+}
 
 
 struct Move{
@@ -117,13 +127,64 @@ private:
             RightCaptures &= RightCaptures - 1; 
         }
     }
+
+    void generateKnightMoves(bool isWhite){
+        uint64_t knight = isWhite ? board[WN] : board[BN];
+        uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
+        // uint64_t empty = ~getAllPieces();
+        while(knight) {
+            int from = getLSB(knight);
+            uint64_t moves_mask = 0ULL;
+                if (from > 15)  { // Up 2
+                if (from % 8 != 0)  moves_mask |= 1ULL << (from - 17);  // Left 1
+                if (from % 8 != 7)  moves_mask |= 1ULL << (from - 15);  // Right 1
+            }
+            if (from < 48)  { // Down 2
+                if (from % 8 != 0)  moves_mask |= 1ULL << (from + 15);  // Left 1
+                if (from % 8 != 7)  moves_mask |= 1ULL << (from + 17);  // Right 1
+            }
+            if (from % 8 > 1)  { // Left 2
+                if (from > 7)   moves_mask |= 1ULL << (from - 10);  // Up 1
+                if (from < 56)  moves_mask |= 1ULL << (from + 6);   // Down 1
+            }
+            if (from % 8 < 6)  { // Right 2
+                if (from > 7)   moves_mask |= 1ULL << (from - 6);   // Up 1
+                if (from < 56)  moves_mask |= 1ULL << (from + 10);  // Down 1
+            }
+            
+            // Remove moves to squares occupied by friendly pieces
+            moves_mask &= ~friendly;
+            
+            // Add all valid moves to the moves vector
+            while (moves_mask) {
+                int to = getLSB(moves_mask);
+                moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+                moves_mask &= moves_mask - 1;  // Clear least significant bit
+            }
+            
+            knight &= knight - 1;  // Clear least significant bit
+        }
+
+        }
+    
+    void GenerateRookMoves(bool isWhite){
+        uint64_t Rook = isWhite ? board[WR] : board[BR];
+        uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
+        uint64_t allPieces = getAllPieces();
+            while(Rook){
+
+            }
+
+    void GenerateBishopMoves(bool isWhite);
+
+    }
     public:
     MoveGen(ChessBoard& boards) : board(boards){}
 
     std::vector<Move> GenerateMoves(bool isWhite) {
         moves.clear();
-        GeneratePawnMoves(isWhite);
-        // generateKnightMoves(isWhite);
+        // GeneratePawnMoves(isWhite);
+        generateKnightMoves(isWhite);
         return moves;
     }
 };

@@ -10,6 +10,7 @@ void setPiece(Bitboard &bitboard, int file, int rank) {
 }
 
 void initBoard(ChessBoard &b) {
+
   // Set up pieces for White
   setPiece(b[WR], 0, 0); // White Rook on a1
   setPiece(b[WN], 1, 0); // White Knight on b1
@@ -36,6 +37,8 @@ void initBoard(ChessBoard &b) {
     setPiece(b[BP], file, 6); // Black Pawns on rank 7
   }
 }
+
+
 
 void printBoard(const ChessBoard &pieceBitboards) {
   char board[64];

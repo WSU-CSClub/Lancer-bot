@@ -11,11 +11,6 @@ enum Piece { WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK};
 using Bitboard = uint64_t;
 
 
-// TODO: check if vector > array for this case
-//        as it's a constant size collection
-
-
-
 //BitBoard
 using ChessBoard = std::vector<Bitboard>;
 
