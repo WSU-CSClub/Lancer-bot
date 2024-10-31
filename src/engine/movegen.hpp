@@ -18,6 +18,7 @@ struct Move{
     uint8_t from;
     uint8_t to;
     uint8_t flags;
+    bool inCheck{false};
 };
 
 
@@ -206,7 +207,7 @@ private:
                 blockers = allPieces & file_mask;
 
                 //Look up 
-                possible = file_mask & (-(1ULL << from + 1));
+                possible = file_mask & (-(1ULL << (from + 1)));
                 if(blockers){
                     int blocker = getLSB(blockers & possible);
                     possible &= ~(file_mask & (-(1ULL) << blocker));
@@ -233,18 +234,275 @@ private:
         
             Rook &= Rook - 1;
             }
-
-    void GenerateBishopMoves(bool isWhite);
-    
     }
+
+ void GenerateBishopMoves(bool isWhite) {
+    uint64_t Bishop = isWhite ? board[WB] : board[BB];
+    uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
+    uint64_t allPieces = getAllPieces();
+    
+    while (Bishop) {
+        int from = getLSB(Bishop);
+        uint64_t move_mask = 0ULL;
+        
+        // Helper lambda to get diagonal mask
+        auto getDiagonalMask = [](int square) {
+            const uint64_t mainDiagonal = 0x8040201008040201ULL;
+            int diag = (square % 8) - (square / 8);
+            if (diag >= 0) {
+                return mainDiagonal >> (diag * 8);
+            } else {
+                return mainDiagonal << (-diag * 8);
+            }
+        };
+        
+        // Helper lambda to get anti-diagonal mask
+        auto getAntiDiagonalMask = [](int square) {
+            const uint64_t mainAntiDiagonal = 0x0102040810204080ULL;
+            int diag = (square % 8) + (square / 8);
+            if (diag <= 7) {
+                return mainAntiDiagonal >> ((7 - diag) * 8);
+            } else {
+                return mainAntiDiagonal << ((diag - 7) * 8);
+            }
+        };
+
+        uint64_t diagonalMask = getDiagonalMask(from);
+        uint64_t antiDiagonalMask = getAntiDiagonalMask(from);
+
+        // Northeast direction (diagonal)
+        uint64_t possible = diagonalMask & (-(1ULL << (from + 1)));
+        uint64_t blockers = allPieces & diagonalMask & possible;
+        if (blockers) {
+            int blocker = getLSB(blockers);
+            possible &= ~(-(1ULL << blocker));
+        }
+        move_mask |= possible;
+
+        // Southwest direction (diagonal)
+        possible = diagonalMask & ((1ULL << from) - 1);
+        blockers = allPieces & diagonalMask & possible;
+        if (blockers) {
+            int blocker = 63 - __builtin_clzll(blockers);
+            possible &= ~((1ULL << (blocker + 1)) - 1);
+        }
+        move_mask |= possible;
+
+        // Northwest direction (anti-diagonal)
+        possible = antiDiagonalMask & (-(1ULL << (from + 1)));
+        blockers = allPieces & antiDiagonalMask & possible;
+        if (blockers) {
+            int blocker = getLSB(blockers);
+            possible &= ~(-(1ULL << blocker));
+        }
+        move_mask |= possible;
+
+        // Southeast direction (anti-diagonal)
+        possible = antiDiagonalMask & ((1ULL << from) - 1);
+        blockers = allPieces & antiDiagonalMask & possible;
+        if (blockers) {
+            int blocker = 63 - __builtin_clzll(blockers);
+            possible &= ~((1ULL << (blocker + 1)) - 1);
+        }
+        move_mask |= possible;
+
+        // Remove moves to squares occupied by friendly pieces
+        move_mask &= ~friendly;
+
+        // Add all valid moves to the moves vector
+        while (move_mask) {
+            int to = getLSB(move_mask);
+            moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+            move_mask &= move_mask - 1;
+        }
+
+        Bishop &= Bishop - 1;  // Move to next bishop
+    }
+}
+
+
+void GenerateQueenMoves(bool isWhite) {
+    uint64_t Queen = isWhite ? board[WQ] : board[BQ];
+    uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
+    uint64_t allPieces = getAllPieces();
+    
+    while (Queen) {
+        int from = getLSB(Queen);
+        uint64_t move_mask = 0ULL;
+
+        // Get masks for all directions
+        uint64_t rank_mask = getRankMask(from);
+        uint64_t file_mask = getFileMask(from);
+        
+        // Reuse the diagonal mask lambdas from bishop moves
+        auto getDiagonalMask = [](int square) {
+            const uint64_t mainDiagonal = 0x8040201008040201ULL;
+            int diag = (square % 8) - (square / 8);
+            if (diag >= 0) {
+                return mainDiagonal >> (diag * 8);
+            } else {
+                return mainDiagonal << (-diag * 8);
+            }
+        };
+        
+        auto getAntiDiagonalMask = [](int square) {
+            const uint64_t mainAntiDiagonal = 0x0102040810204080ULL;
+            int diag = (square % 8) + (square / 8);
+            if (diag <= 7) {
+                return mainAntiDiagonal >> ((7 - diag) * 8);
+            } else {
+                return mainAntiDiagonal << ((diag - 7) * 8);
+            }
+        };
+
+        uint64_t diagonal_mask = getDiagonalMask(from);
+        uint64_t anti_diagonal_mask = getAntiDiagonalMask(from);
+
+        // Rook-like moves (horizontal and vertical)
+        // Looking right
+        uint64_t possible = rank_mask & (-(1ULL << (from + 1)));
+        uint64_t blockers = allPieces & rank_mask & possible;
+        if (blockers) {
+            int blocker = getLSB(blockers);
+            possible &= ~(rank_mask & (-(1ULL << blocker)));
+        }
+        move_mask |= possible;
+
+        // Looking left
+        possible = rank_mask & ((1ULL << from) - 1);
+        blockers = allPieces & rank_mask & possible;
+        if (blockers) {
+            int blocker = 63 - __builtin_clzll(blockers);
+            possible &= ~(rank_mask & ((1ULL << (blocker + 1)) - 1));
+        }
+        move_mask |= possible;
+
+        // Looking up
+        possible = file_mask & (-(1ULL << (from + 1)));
+        blockers = allPieces & file_mask & possible;
+        if (blockers) {
+            int blocker = getLSB(blockers & possible);
+            possible &= ~(file_mask & (-(1ULL << blocker)));
+        }
+        move_mask |= possible;
+
+        // Looking down
+        possible = file_mask & ((1ULL << from) - 1);
+        blockers = allPieces & file_mask & possible;
+        if (blockers) {
+            int blocker = 63 - __builtin_clzll(blockers);
+            possible &= ~(file_mask & ((1ULL << (blocker + 1)) - 1));
+        }
+        move_mask |= possible;
+
+        // Bishop-like moves (diagonals)
+        // Northeast direction
+        possible = diagonal_mask & (-(1ULL << (from + 1)));
+        blockers = allPieces & diagonal_mask & possible;
+        if (blockers) {
+            int blocker = getLSB(blockers);
+            possible &= ~(-(1ULL << blocker));
+        }
+        move_mask |= possible;
+
+        // Southwest direction
+        possible = diagonal_mask & ((1ULL << from) - 1);
+        blockers = allPieces & diagonal_mask & possible;
+        if (blockers) {
+            int blocker = 63 - __builtin_clzll(blockers);
+            possible &= ~((1ULL << (blocker + 1)) - 1);
+        }
+        move_mask |= possible;
+
+        // Northwest direction
+        possible = anti_diagonal_mask & (-(1ULL << (from + 1)));
+        blockers = allPieces & anti_diagonal_mask & possible;
+        if (blockers) {
+            int blocker = getLSB(blockers);
+            possible &= ~(-(1ULL << blocker));
+        }
+        move_mask |= possible;
+
+        // Southeast direction
+        possible = anti_diagonal_mask & ((1ULL << from) - 1);
+        blockers = allPieces & anti_diagonal_mask & possible;
+        if (blockers) {
+            int blocker = 63 - __builtin_clzll(blockers);
+            possible &= ~((1ULL << (blocker + 1)) - 1);
+        }
+        move_mask |= possible;
+
+        // Remove moves to squares occupied by friendly pieces
+        move_mask &= ~friendly;
+
+        // Add all valid moves to the moves vector
+        while (move_mask) {
+            int to = getLSB(move_mask);
+            moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+            move_mask &= move_mask - 1;
+        }
+
+        Queen &= Queen - 1;  // Move to next queen
+    }
+}
+
+    void GenerateKingMoves(bool isWhite) {
+    uint64_t King = isWhite ? board[WK] : board[BK];
+    uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
+    
+    while (King) {
+        int from = getLSB(King);
+        uint64_t move_mask = 0ULL;
+        
+        // Generate all possible moves
+        // Right
+        if (from % 8 != 7) {
+            move_mask |= 1ULL << (from + 1);
+            // Up-Right
+            if (from < 56) move_mask |= 1ULL << (from + 9);
+            // Down-Right
+            if (from > 7) move_mask |= 1ULL << (from - 7);
+        }
+        
+        // Left
+        if (from % 8 != 0) {
+            move_mask |= 1ULL << (from - 1);
+            // Up-Left
+            if (from < 56) move_mask |= 1ULL << (from + 7);
+            // Down-Left
+            if (from > 7) move_mask |= 1ULL << (from - 9);
+        }
+        
+        // Up (directly)
+        if (from < 56) move_mask |= 1ULL << (from + 8);
+        
+        // Down (directly)
+        if (from > 7) move_mask |= 1ULL << (from - 8);
+        
+        // Remove moves to squares occupied by friendly pieces
+        move_mask &= ~friendly;
+        
+        // Add all valid moves to the moves vector
+        while (move_mask) {
+            int to = getLSB(move_mask);
+            moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+            move_mask &= move_mask - 1;  // Clear least significant bit
+        }
+        
+        King &= King - 1;  // Clear the current king bit (though there's only one king)
+    }
+}
     public:
     MoveGen(ChessBoard& boards) : board(boards){}
 
     std::vector<Move> GenerateMoves(bool isWhite) {
         moves.clear();
-        // GeneratePawnMoves(isWhite);
-        // generateKnightMoves(isWhite);
+        GeneratePawnMoves(isWhite);
+        generateKnightMoves(isWhite);
         GenerateRookMoves(isWhite);
+        GenerateBishopMoves(isWhite);
+        GenerateQueenMoves(isWhite);
+        GenerateKingMoves(isWhite);
         return moves;
     }
 };
