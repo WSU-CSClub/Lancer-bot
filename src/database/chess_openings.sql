@@ -1,8 +1,9 @@
--- SQLite schema for chess openings
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS fen_italian;
+DROP TABLE IF EXISTS fen_queen_gambit;
+DROP TABLE IF EXISTS fen_ruy_lopez;
 
--- Create tables with appropriate types
--- Note: SQLite doesn't have a separate INT type, it uses INTEGER
-
+-- Recreate tables with IF NOT EXISTS
 CREATE TABLE IF NOT EXISTS fen_italian (
     italianid INTEGER PRIMARY KEY,
     row INTEGER,
@@ -21,8 +22,8 @@ CREATE TABLE IF NOT EXISTS fen_ruy_lopez (
     fen_notation TEXT
 );
 
--- Insert data into fen_italian
-INSERT INTO fen_italian (italianid, row, fen_notation) VALUES
+-- Insert data with conflict resolution
+INSERT OR REPLACE INTO fen_italian (italianid, row, fen_notation) VALUES
     (1200, 1, 'r1bqkbnr'),
     (1201, 2, 'pppp1ppp'),
     (1202, 3, '2n5'),
@@ -32,8 +33,7 @@ INSERT INTO fen_italian (italianid, row, fen_notation) VALUES
     (1206, 7, 'PPPP1PPP'),
     (1207, 8, 'RNBQK2R');
 
--- Insert data into fen_queen_gambit
-INSERT INTO fen_queen_gambit (queengambitid, row, fen_notation) VALUES
+INSERT OR REPLACE INTO fen_queen_gambit (queengambitid, row, fen_notation) VALUES
     (1000, 1, 'rnbqkb1r'),
     (1001, 2, 'ppp2ppp'),
     (1002, 3, '4pn2'),
@@ -43,8 +43,7 @@ INSERT INTO fen_queen_gambit (queengambitid, row, fen_notation) VALUES
     (1006, 7, 'PP2PPPP'),
     (1007, 8, 'RNBQKB1R');
 
--- Insert data into fen_ruy_lopez
-INSERT INTO fen_ruy_lopez (ruylopezid, row, fen_notation) VALUES
+INSERT OR REPLACE INTO fen_ruy_lopez (ruylopezid, row, fen_notation) VALUES
     (1100, 1, 'r1bqkbnr'),
     (1101, 2, 'pppp1ppp'),
     (1102, 3, '2n5'),
@@ -58,3 +57,10 @@ INSERT INTO fen_ruy_lopez (ruylopezid, row, fen_notation) VALUES
 CREATE INDEX IF NOT EXISTS idx_italian_row ON fen_italian(row);
 CREATE INDEX IF NOT EXISTS idx_queen_gambit_row ON fen_queen_gambit(row);
 CREATE INDEX IF NOT EXISTS idx_ruy_lopez_row ON fen_ruy_lopez(row);
+
+-- Verify the data
+SELECT 'Italian Game' as opening, COUNT(*) as row_count FROM fen_italian
+UNION ALL
+SELECT 'Queen''s Gambit', COUNT(*) FROM fen_queen_gambit
+UNION ALL
+SELECT 'Ruy Lopez', COUNT(*) FROM fen_ruy_lopez;

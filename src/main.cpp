@@ -4,9 +4,7 @@
 #include <cstdio>
 #include <iostream>
 
-
 void printMove(const Move& move) {
-    // Convert square numbers to chess notation
     char fromFile = 'a' + (move.from % 8);
     int fromRank = 1 + (move.from / 8);
     char toFile = 'a' + (move.to % 8);
@@ -15,54 +13,68 @@ void printMove(const Move& move) {
     printf("%c%d%c%d ", fromFile, fromRank, toFile, toRank);
 }
 
-
 int main() {
-  try{
+    try {
+        // Initialize database connection
         ChessEngineDB db("database/chess_openings.db");
-        std::cout << "Italian Opening Position:\n";
+        
+        // Load and display Italian opening position
+        std::cout << "Loading Italian Opening Position:\n";
         auto italian = db.getItalianPosition();
         
-        // Print each row of the board
+        // Print FEN notation for each row
         for (const auto& pos : italian) {
             std::cout << "Row " << pos.row << ": " << pos.fen_notation << "\n";
         }
+        
+        // Get complete FEN string
         std::string complete_fen = db.getCompleteFEN(italian);
         std::cout << "\nComplete FEN: " << complete_fen << "\n\n";
 
-  }
-  catch (const std::exception& e) {
+        // Initialize board
+        ChessBoard board(12, 0);
+        
+        // Load either starting position or Italian position
+        bool useItalianOpening = true;  // Toggle between positions
+        
+        if (useItalianOpening) {
+            // Set Italian opening position
+            setPositionFromFEN(board, complete_fen);
+            std::cout << "Loaded Italian Opening Position:\n";
+        } else {
+            // Set starting position
+            initBoard(board);
+            std::cout << "Loaded Starting Position:\n";
+        }
+        
+        // Display the current board state
+        printBoard(board);
+        
+        // Initialize move generator
+        MoveGen moveGen(board);
+        
+        // Generate and print moves for both sides
+        std::cout << "\nLegal moves from this position:\n";
+        
+        // White moves
+        std::vector<Move> whiteMoves = moveGen.GenerateMoves(true);
+        std::cout << "\nWhite moves (" << whiteMoves.size() << " moves):\n";
+        for(const Move& move : whiteMoves) {
+            printMove(move);
+        }
+        
+        // Black moves
+        std::vector<Move> blackMoves = moveGen.GenerateMoves(false);
+        std::cout << "\n\nBlack moves (" << blackMoves.size() << " moves):\n";
+        for(const Move& move : blackMoves) {
+            printMove(move);
+        }
+        std::cout << "\n";
+        
+    } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-
-  // Example bitboard
-  ChessBoard board(12, 0);
-  initBoard(board);
-
-  // Print the board
-  // printBoard(board);
-
-
-MoveGen moveGen(board);
-
-
-
-    // Generate moves for white
-    std::vector<Move> whiteMoves = moveGen.GenerateMoves(true);
     
-    // Print all white moves
-    // printf("\nWhite moves:\n");
-    for(const Move& move : whiteMoves) {
-        // printMove(move);
-    }
-    
-    // Generate moves for black
-    std::vector<Move> blackMoves = moveGen.GenerateMoves(false);
-    
-    // Print all black moves
-    // printf("\n\nBlack moves:\n");
-    for(const Move& move : blackMoves) {
-        // printMove(move);
-    }
-  return 0;
+    return 0;
 }
