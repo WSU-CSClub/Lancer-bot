@@ -3,7 +3,7 @@
 #include "network/network.hpp"
 #include <cstdio>
 #include <iostream>
-
+#include "eval/evaluation.hpp"
 void printMove(const Move& move) {
     char fromFile = 'a' + (move.from % 8);
     int fromRank = 1 + (move.from / 8);
@@ -20,7 +20,7 @@ int main() {
         
         // Load and display Italian opening position
         std::cout << "Loading Italian Opening Position:\n";
-        auto italian = db.getItalianPosition();
+        auto italian = db.GetQueensGambitPosition();
         
         // Print FEN notation for each row
         for (const auto& pos : italian) {
@@ -35,7 +35,7 @@ int main() {
         ChessBoard board(12, 0);
         
         // Load either starting position or Italian position
-        bool useItalianOpening = true;  // Toggle between positions
+        bool useItalianOpening = false;  // Toggle between positions
         
         if (useItalianOpening) {
             // Set Italian opening position
@@ -47,6 +47,7 @@ int main() {
             std::cout << "Loaded Starting Position:\n";
         }
         
+
         // Display the current board state
         printBoard(board);
         
@@ -71,6 +72,10 @@ int main() {
         }
         std::cout << "\n";
         
+        Evaluation evaluator(board);
+        int score = evaluator.evaluate();
+
+        std::cout << "score : " << score << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;

@@ -65,10 +65,15 @@ class ChessEngineDB
     }
 
 
-  std::vector<Position> getItalianPosition() {
+    std::vector<Position> GetChessBoardPosition(){
+        return GetPosition("chess_openings","opening_id");
+    }
+    std::vector<Position> getItalianPosition() {
         return GetPosition("fen_italian", "italianid");
     }
-
+    std::vector<Position> GetQueensGambitPosition(){
+        return GetPosition("fen_queen_gambit","queengambitid");
+    }
     private:
     std::vector<Position> GetPosition(const std::string& table, const std::string& id_column){
         std::vector<Position> position;
