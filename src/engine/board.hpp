@@ -21,4 +21,8 @@ void printBoard(const ChessBoard &pieceBitboards);
 void initBoard(ChessBoard &b);
 
 void setPositionFromFEN(ChessBoard &board, const std::string &fen);
+
+bool isWhiteturnFen(const std::string& fen);
+
+
 #endif

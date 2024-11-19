@@ -338,18 +338,6 @@ int evaluateKnightOutposts(bool isWhite) {
     return score;
 }
 
-    bool isWhiteTurn(const std::string& fen) {
-        // Find the first space
-        size_t spacePos = fen.find(' ');
-        if (spacePos != std::string::npos && spacePos + 1 < fen.length()) {
-            // Next character after space indicates turn
-            return fen[spacePos + 1] == 'w';
-        }
-        return true; // Default to white if FEN is malformed
-    }
-
-
-
 public:
     Evaluation(ChessBoard& b, MoveGen& mg) : board(b), moveGen(mg) {}
 

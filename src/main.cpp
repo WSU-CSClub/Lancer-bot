@@ -13,6 +13,8 @@ void printMove(const Move& move) {
     printf("%c%d%c%d ", fromFile, fromRank, toFile, toRank);
 }
 
+std::string temp_fen = "r1bq1k1r/pp2bppp/2n1pn2/2p5/2B1NB2/3P1N2/PPP2PPP/R2QR1K1 b - - 3 10";
+
 int main() {
     try {
         // Initialize database connection
@@ -43,7 +45,7 @@ int main() {
             std::cout << "Loaded Italian Opening Position:\n";
         } else {
             // Set starting position
-            initBoard(board);
+            setPositionFromFEN(board,temp_fen);
             std::cout << "Loaded Starting Position:\n";
         }
         
@@ -72,8 +74,8 @@ int main() {
         }
         std::cout << "\n";
         
-        Evaluation evaluator(board);
-        int score = evaluator.evaluate();
+        Evaluation evaluator(board,moveGen);
+        auto score = evaluator.evaluate(isWhiteturnFen(temp_fen));
 
         std::cout << "score : " << score << std::endl;
     } catch (const std::exception& e) {

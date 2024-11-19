@@ -248,3 +248,10 @@ std::string boardToFen(const ChessBoard &board) {
 }
 
 
+bool isWhiteturnFen(const std::string& fen) {
+    size_t spacePos = fen.find(' ');
+    if (spacePos != std::string::npos && spacePos + 1 < fen.length()) {
+        return fen[spacePos + 1] == 'w';
+    }
+    throw std::runtime_error("Invalid FEN string: missing turn indicator");
+} 
