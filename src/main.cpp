@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <iostream>
 #include "eval/evaluation.hpp"
+#include "engine/search.hpp"
 void printMove(const Move& move) {
     char fromFile = 'a' + (move.from % 8);
     int fromRank = 1 + (move.from / 8);
@@ -13,7 +14,7 @@ void printMove(const Move& move) {
     printf("%c%d%c%d ", fromFile, fromRank, toFile, toRank);
 }
 
-std::string temp_fen = "r1bq1k1r/pp2bppp/2n1pn2/2p5/2B1NB2/3P1N2/PPP2PPP/R2QR1K1 b - - 3 10";
+std::string temp_fen = "r1bq1k1r/p3bppp/1pn1pn2/2p5/2B1NB2/3P1N2/PPP2PPP/R2QR1K1 w - - 0 11";
 
 int main() {
     try {
@@ -22,7 +23,7 @@ int main() {
         
         // Load and display Italian opening position
         std::cout << "Loading Italian Opening Position:\n";
-        auto italian = db.GetQueensGambitPosition();
+        auto italian = db.getItalianPosition();
         
         // Print FEN notation for each row
         for (const auto& pos : italian) {
@@ -37,7 +38,7 @@ int main() {
         ChessBoard board(12, 0);
         
         // Load either starting position or Italian position
-        bool useItalianOpening = false;  // Toggle between positions
+        bool useItalianOpening = true;  // Toggle between positions
         
         if (useItalianOpening) {
             // Set Italian opening position
@@ -75,7 +76,14 @@ int main() {
         std::cout << "\n";
         
         Evaluation evaluator(board,moveGen);
-        auto score = evaluator.evaluate(isWhiteturnFen(temp_fen));
+        auto score = evaluator.evaluate(isWhiteturnFen(complete_fen));
+
+        MinimaxSearch minimaxSearch(board, moveGen, evaluator);
+        std::cout << "\nCalculating best move...\n";
+        Move bestMove = minimaxSearch.findBestMove(false);
+        std::cout << "Best move found: ";
+        printMove(bestMove);
+        std::cout << "\n";
 
         std::cout << "score : " << score << std::endl;
     } catch (const std::exception& e) {
