@@ -10,7 +10,7 @@ private:
     ChessBoard& board;
     MoveGen& moveGen;
     Evaluation& evaluator;
-    static constexpr int MAX_DEPTH = 10;  // Adjust based on desired search depth
+    static constexpr int MAX_DEPTH = 100;  // Adjust based on desired search depth
 
     // Helper function to make a move on the board
     void makeMove(const Move& move, bool isWhite) {

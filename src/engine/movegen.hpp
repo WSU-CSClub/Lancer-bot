@@ -1,6 +1,7 @@
 #pragma once 
 #include <iostream>
 #include "board.hpp"
+#include <array>
 
 // For  windows users!
 inline int getLSB(uint64_t b) {
@@ -101,28 +102,28 @@ private:
         // Save the Push 
         // SingePush - 1 removes the move and then looks for the next move again 
         while(SinglePush) {
-            int to = __builtin_ctzll(SinglePush);
+            int to = getLSB(SinglePush);
             int from = to - direction;
             moves.push_back({(uint8_t)from, (uint8_t)to, 0});
             SinglePush &= SinglePush - 1;  // Clear least significant bit
         }
         
         while(doublePush) {
-            int to = __builtin_ctzll(doublePush);
+            int to = getLSB(doublePush);
             int from = to - (2 * direction);  // Subtract 2 ranks worth of movement
             moves.push_back({(uint8_t)from, (uint8_t)to, 0});
             doublePush &= doublePush - 1; 
         }
 
         while(LeftCapture){
-            int to = __builtin_ctzll(LeftCapture);
+            int to = getLSB(LeftCapture);
             int from = isWhite ? to - 7 : to + 9;  
             moves.push_back({(uint8_t)from, (uint8_t)to, 0});
             LeftCapture &= LeftCapture - 1; 
         }
 
         while(RightCaptures){
-            int to = __builtin_ctzll(RightCaptures);
+            int to = getLSB(RightCaptures);
             int from = isWhite ? to - 9 : to + 7;  // Correct diagonal math
             moves.push_back({(uint8_t)from, (uint8_t)to, 0});
             RightCaptures &= RightCaptures - 1; 
@@ -198,7 +199,7 @@ private:
                 possible = rank_mask & ((1ULL << from) - 1);
                 blockers = allPieces & rank_mask;
                 if (blockers) {
-                    int blocker = 63 - __builtin_clzll(blockers & possible);
+                    int blocker = 63 - getLSB(blockers & possible);
                     possible &= ~(rank_mask & ((1ULL << (blocker + 1)) - 1));
                 }
                 move_mask |= possible;
@@ -219,7 +220,7 @@ private:
                 possible = file_mask & ((1ULL << from) - 1);
                 blockers = allPieces & file_mask & possible;
                 if (blockers) {
-                    int blocker = 63 - __builtin_clzll(blockers);
+                    int blocker = 63 - getLSB(blockers);
                     possible &= ~(file_mask & ((1ULL << (blocker + 1)) - 1));
                 }
                 move_mask |= possible;
@@ -283,7 +284,7 @@ private:
         possible = diagonalMask & ((1ULL << from) - 1);
         blockers = allPieces & diagonalMask & possible;
         if (blockers) {
-            int blocker = 63 - __builtin_clzll(blockers);
+            int blocker = 63 - getLSB(blockers);
             possible &= ~((1ULL << (blocker + 1)) - 1);
         }
         move_mask |= possible;
@@ -301,7 +302,7 @@ private:
         possible = antiDiagonalMask & ((1ULL << from) - 1);
         blockers = allPieces & antiDiagonalMask & possible;
         if (blockers) {
-            int blocker = 63 - __builtin_clzll(blockers);
+            int blocker = 63 - getLSB(blockers);
             possible &= ~((1ULL << (blocker + 1)) - 1);
         }
         move_mask |= possible;
@@ -372,7 +373,7 @@ void GenerateQueenMoves(bool isWhite) {
         possible = rank_mask & ((1ULL << from) - 1);
         blockers = allPieces & rank_mask & possible;
         if (blockers) {
-            int blocker = 63 - __builtin_clzll(blockers);
+            int blocker = 63 - getLSB(blockers);
             possible &= ~(rank_mask & ((1ULL << (blocker + 1)) - 1));
         }
         move_mask |= possible;
@@ -390,7 +391,7 @@ void GenerateQueenMoves(bool isWhite) {
         possible = file_mask & ((1ULL << from) - 1);
         blockers = allPieces & file_mask & possible;
         if (blockers) {
-            int blocker = 63 - __builtin_clzll(blockers);
+            int blocker = 63 - getLSB(blockers);
             possible &= ~(file_mask & ((1ULL << (blocker + 1)) - 1));
         }
         move_mask |= possible;
@@ -409,7 +410,7 @@ void GenerateQueenMoves(bool isWhite) {
         possible = diagonal_mask & ((1ULL << from) - 1);
         blockers = allPieces & diagonal_mask & possible;
         if (blockers) {
-            int blocker = 63 - __builtin_clzll(blockers);
+            int blocker = 63 - getLSB(blockers);
             possible &= ~((1ULL << (blocker + 1)) - 1);
         }
         move_mask |= possible;
@@ -427,7 +428,7 @@ void GenerateQueenMoves(bool isWhite) {
         possible = anti_diagonal_mask & ((1ULL << from) - 1);
         blockers = allPieces & anti_diagonal_mask & possible;
         if (blockers) {
-            int blocker = 63 - __builtin_clzll(blockers);
+            int blocker = 63 - getLSB(blockers);
             possible &= ~((1ULL << (blocker + 1)) - 1);
         }
         move_mask |= possible;
