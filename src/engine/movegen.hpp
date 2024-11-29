@@ -31,6 +31,7 @@ private:
     std::array<uint64_t, 64> king_attacks;
     std::array<uint64_t, 64> knight_attacks;
     std::vector<Move> moves;
+    std::vector<Move> attack_vision;
 
     uint64_t getRankMask(int square) {
     /*
@@ -130,46 +131,72 @@ private:
         }
     }
 
-    void generateKnightMoves(bool isWhite){
+    void GeneratePawnAttackVision(bool isWhite) {
+        uint64_t pawns = isWhite ? board[WP] : board[BP];
+
+        uint64_t LeftCapture = isWhite ?
+            ((pawns & ~0x0101010101010101ULL) << 7):
+            ((pawns & ~0x0101010101010101ULL) >> 9);
+
+        uint64_t RightCaptures = isWhite ?
+            ((pawns & ~0x8080808080808080ULL) << 9):
+            ((pawns & ~0x8080808080808080ULL) >> 7);
+
+        while (LeftCapture) {
+            int to = getLSB(LeftCapture);
+            int from = isWhite ? to - 7 : to + 9;
+            attack_vision.push_back({ (uint8_t)from, (uint8_t)to, 0 });
+            LeftCapture &= LeftCapture - 1;
+        }
+
+        while (RightCaptures) {
+            int to = getLSB(RightCaptures);
+            int from = isWhite ? to - 9 : to + 7;  // Correct diagonal math
+            attack_vision.push_back({ (uint8_t)from, (uint8_t)to, 0 });
+            RightCaptures &= RightCaptures - 1;
+        }
+    }
+
+    void GenerateKnightMoves(bool isWhite, std::vector<Move>& move, bool includeFriendly = false){
         uint64_t knight = isWhite ? board[WN] : board[BN];
         uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
         // uint64_t empty = ~getAllPieces();
         while(knight) {
             int from = getLSB(knight);
-            uint64_t moves_mask = 0ULL;
+            uint64_t move_mask = 0ULL;
                 if (from > 15)  { // Up 2
-                if (from % 8 != 0)  moves_mask |= 1ULL << (from - 17);  // Left 1
-                if (from % 8 != 7)  moves_mask |= 1ULL << (from - 15);  // Right 1
+                if (from % 8 != 0)  move_mask |= 1ULL << (from - 17);  // Left 1
+                if (from % 8 != 7)  move_mask |= 1ULL << (from - 15);  // Right 1
             }
             if (from < 48)  { // Down 2
-                if (from % 8 != 0)  moves_mask |= 1ULL << (from + 15);  // Left 1
-                if (from % 8 != 7)  moves_mask |= 1ULL << (from + 17);  // Right 1
+                if (from % 8 != 0)  move_mask |= 1ULL << (from + 15);  // Left 1
+                if (from % 8 != 7)  move_mask |= 1ULL << (from + 17);  // Right 1
             }
             if (from % 8 > 1)  { // Left 2
-                if (from > 7)   moves_mask |= 1ULL << (from - 10);  // Up 1
-                if (from < 56)  moves_mask |= 1ULL << (from + 6);   // Down 1
+                if (from > 7)   move_mask |= 1ULL << (from - 10);  // Up 1
+                if (from < 56)  move_mask |= 1ULL << (from + 6);   // Down 1
             }
             if (from % 8 < 6)  { // Right 2
-                if (from > 7)   moves_mask |= 1ULL << (from - 6);   // Up 1
-                if (from < 56)  moves_mask |= 1ULL << (from + 10);  // Down 1
+                if (from > 7)   move_mask |= 1ULL << (from - 6);   // Up 1
+                if (from < 56)  move_mask |= 1ULL << (from + 10);  // Down 1
             }
             
             // Remove moves to squares occupied by friendly pieces
-            moves_mask &= ~friendly;
+            if (!includeFriendly) move_mask &= ~friendly;
             
             // Add all valid moves to the moves vector
-            while (moves_mask) {
-                int to = getLSB(moves_mask);
-                moves.push_back({(uint8_t)from, (uint8_t)to, 0});
-                moves_mask &= moves_mask - 1;  // Clear least significant bit
+            while (move_mask) {
+                int to = getLSB(move_mask);
+                move.push_back({(uint8_t)from, (uint8_t)to, 0});
+                move_mask &= move_mask - 1;  // Clear least significant bit
             }
             
             knight &= knight - 1;  // Clear least significant bit
         }
 
-        }
+    }
     
-    void GenerateRookMoves(bool isWhite){
+    void GenerateRookMoves(bool isWhite, std::vector<Move>& move, bool includeFriendly = false){
         uint64_t Rook = isWhite ? board[WR] : board[BR];
         uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
         uint64_t allPieces = getAllPieces();
@@ -225,11 +252,11 @@ private:
                 }
                 move_mask |= possible;
 
-                move_mask &= ~friendly;
+                if (!includeFriendly) move_mask &= ~friendly;
 
                 while (move_mask) {
                     int to = getLSB(move_mask);
-                    moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+                    move.push_back({(uint8_t)from, (uint8_t)to, 0});
                     move_mask &= move_mask - 1;
                 }
         
@@ -237,7 +264,7 @@ private:
             }
     }
 
- void GenerateBishopMoves(bool isWhite) {
+ void GenerateBishopMoves(bool isWhite, std::vector<Move>& move, bool includeFriendly = false) {
     uint64_t Bishop = isWhite ? board[WB] : board[BB];
     uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
     uint64_t allPieces = getAllPieces();
@@ -308,12 +335,12 @@ private:
         move_mask |= possible;
 
         // Remove moves to squares occupied by friendly pieces
-        move_mask &= ~friendly;
+        if (!includeFriendly) move_mask &= ~friendly;
 
         // Add all valid moves to the moves vector
         while (move_mask) {
             int to = getLSB(move_mask);
-            moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+            move.push_back({(uint8_t)from, (uint8_t)to, 0});
             move_mask &= move_mask - 1;
         }
 
@@ -322,7 +349,7 @@ private:
 }
 
 
-void GenerateQueenMoves(bool isWhite) {
+void GenerateQueenMoves(bool isWhite, std::vector<Move>& move, bool includeFriendly = false) {
     uint64_t Queen = isWhite ? board[WQ] : board[BQ];
     uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
     uint64_t allPieces = getAllPieces();
@@ -434,12 +461,12 @@ void GenerateQueenMoves(bool isWhite) {
         move_mask |= possible;
 
         // Remove moves to squares occupied by friendly pieces
-        move_mask &= ~friendly;
+        if (!includeFriendly) move_mask &= ~friendly;
 
         // Add all valid moves to the moves vector
         while (move_mask) {
             int to = getLSB(move_mask);
-            moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+            move.push_back({(uint8_t)from, (uint8_t)to, 0});
             move_mask &= move_mask - 1;
         }
 
@@ -447,7 +474,7 @@ void GenerateQueenMoves(bool isWhite) {
     }
 }
 
-    void GenerateKingMoves(bool isWhite) {
+    void GenerateKingMoves(bool isWhite, std::vector<Move>& move, bool includeFriendly = false) {
     uint64_t King = isWhite ? board[WK] : board[BK];
     uint64_t friendly = isWhite ? getWhitePieces() : getBlackPieces();
     
@@ -481,12 +508,12 @@ void GenerateQueenMoves(bool isWhite) {
         if (from > 7) move_mask |= 1ULL << (from - 8);
         
         // Remove moves to squares occupied by friendly pieces
-        move_mask &= ~friendly;
+        if (!includeFriendly) move_mask &= ~friendly;
         
         // Add all valid moves to the moves vector
         while (move_mask) {
             int to = getLSB(move_mask);
-            moves.push_back({(uint8_t)from, (uint8_t)to, 0});
+            move.push_back({(uint8_t)from, (uint8_t)to, 0});
             move_mask &= move_mask - 1;  // Clear least significant bit
         }
         
@@ -499,11 +526,22 @@ void GenerateQueenMoves(bool isWhite) {
     std::vector<Move> GenerateMoves(bool isWhite) {
         moves.clear();
         GeneratePawnMoves(isWhite);
-        generateKnightMoves(isWhite);
-        GenerateRookMoves(isWhite);
-        GenerateBishopMoves(isWhite);
-        GenerateQueenMoves(isWhite);
-        GenerateKingMoves(isWhite);
+        GenerateKnightMoves(isWhite, moves);
+        GenerateRookMoves(isWhite, moves);
+        GenerateBishopMoves(isWhite, moves);
+        GenerateQueenMoves(isWhite, moves);
+        GenerateKingMoves(isWhite, moves);
         return moves;
+    }
+
+    std::vector<Move> GenerateAttackVision(bool isWhite) {
+        attack_vision.clear();
+        GeneratePawnAttackVision(isWhite);
+        GenerateKnightMoves(isWhite, attack_vision, true);
+        GenerateRookMoves(isWhite, attack_vision, true);
+        GenerateBishopMoves(isWhite, attack_vision, true);
+        GenerateQueenMoves(isWhite, attack_vision, true);
+        GenerateKingMoves(isWhite, attack_vision, true);
+        return attack_vision;
     }
 };

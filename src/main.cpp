@@ -43,6 +43,13 @@ int runPositions(ChessBoard board) {
         printMove(move);
     }
 
+    // White attack vision
+    std::vector<Move> whiteVision = moveGen.GenerateAttackVision(true);
+    std::cout << "\n\nWhite vision (" << whiteVision.size() << " moves):\n";
+    for (const Move& move : whiteVision) {
+        printMove(move);
+    }
+
     // Black moves
     std::vector<Move> blackMoves = moveGen.GenerateMoves(false);
     std::cout << "\n\nBlack moves (" << blackMoves.size() << " moves):\n";
@@ -50,6 +57,13 @@ int runPositions(ChessBoard board) {
         printMove(move);
     }
     std::cout << "\n";
+
+    // Black attack vision
+    std::vector<Move> blackVision = moveGen.GenerateAttackVision(false);
+    std::cout << "\nBlack vision (" << blackVision.size() << " moves):\n";
+    for (const Move& move : blackVision) {
+        printMove(move);
+    }
 
     Evaluation evaluator(board, moveGen);
 
